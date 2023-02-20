@@ -1,78 +1,101 @@
+#include <stdlib.h>
 #include "sort.h"
-
 /**
- * get_digit - gets a digit from a number
- * @number: the integer
- * @digit: the digit position to get
+ * csort2 - auxiliary function of radix sort
  *
- * Return: the digit value at given position
-**/
-int get_digit(long number, int digit)
-{
-	long i = 0L, pow = 1L, ret;
-
-	for (i = 0; i < digit; i++)
-		pow *= 10L;
-	ret = ((number / pow) % 10);
-	return (ret);
-}
-
-/**
- * radix_pass - sorts by radix
- * @array: the integer array to sort
- * @size: the size of the array
- * @digit: the current digit to check
- * @new_array: target array of same size
+ * @array: array of data to be sorted
+ * @buff: malloc buffer
+ * @size: size of data
+ * @lsd: Less significant digit
  *
- * Return: void.
+ * Return: No Return
  */
-int radix_pass(int *array, ssize_t size, int digit, int *new_array)
+void csort2(int *array, int **buff, int size, int lsd)
 {
-	ssize_t i;
-	int buckets[10] = {0};
+	int i, j, csize = 10, num;
+	int carr[10] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+	int carr2[10] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
 	for (i = 0; i < size; i++)
-		buckets[get_digit(array[i], digit)]++;
-	for (i = 1; i <= 9; i++)
-		buckets[i] += buckets[i - 1];
-	for (i = size - 1; i > -1; i--)
-		new_array[buckets[get_digit(array[i], digit)]-- - 1] = array[i];
-	return (1);
-}
+	{
+		num = array[i];
+		for (j = 0; j < lsd; j++)
+			if (j > 0)
+				num = num / 10;
+		num = num % 10;
+		buff[num][carr[num]] = array[i];
+		carr[num] += 1;
+	}
 
+	for (i = 0, j = 0; i < csize; i++)
+	{
+		while (carr[i] > 0)
+		{
+			array[j] = buff[i][carr2[i]];
+			carr2[i] += 1, carr[i] -= 1;
+			j++;
+		}
+	}
+
+	print_array(array, size);
+}
 /**
- * radix_sort - sorts by radix
- * @size: the size of the array
- * @array: the integer array to sort
+ * csort - auxiliary function of radix sort
  *
- * Return: the gap size
+ * @array: array of data to be sorted
+ * @size: size of data
+ * @lsd: Less significant digit
+ *
+ * Return: No Return
+ */
+void csort(int *array, int size, int lsd)
+{
+	int carr[10] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+	int i, j, num, csize = 10, **buff;
+
+	for (i = 0; i < size; i++)
+	{
+		num = array[i];
+		for (j = 0; j < lsd; j++)
+			if (j > 0)
+				num = num / 10;
+		num = num % 10;
+		carr[num] += 1;
+	}
+
+	if (carr[0] == size)
+		return;
+
+	buff = malloc(sizeof(int *) * 10);
+	if (!buff)
+		return;
+
+	for (i = 0; i < csize; i++)
+		if (carr[i] != 0)
+			buff[i] = malloc(sizeof(int) * carr[i]);
+
+
+	csort2(array, buff, size, lsd);
+
+	csort(array, size, lsd + 1);
+
+	for (i = 0; i < csize; i++)
+		if (carr[i] > 0)
+			free(buff[i]);
+	free(buff);
+}
+/**
+ * radix_sort - sorts an array of integers in ascending order using the Radix
+ * sort algorithm
+ *
+ * @array: array of data to be sorted
+ * @size: size of data
+ *
+ * Return: No Return
  */
 void radix_sort(int *array, size_t size)
 {
-	int *old_array, *new_array, *temp_ptr, *ptr, max = 0;
-	size_t i, sd = 1;
-
-	if (!array || size < 2)
+	if (size < 2)
 		return;
-
-	for (i = 0; i < size; i++)
-		if (array[i] > max)
-			max = array[i];
-	while (max /= 10)
-		sd++;
-	old_array = array;
-	new_array = ptr = malloc(sizeof(int) * size);
-	if (!new_array)
-		return;
-	for (i = 0; i < sd; i++)
-	{
-		radix_pass(old_array, (ssize_t)size, i, new_array);
-		temp_ptr = old_array;
-		old_array = new_array;
-		new_array = temp_ptr;
-		print_array(old_array, size);
-	}
-	for (i = 0; i < size; i++)
-		array[i] = old_array[i];
-	free(ptr);
+	csort(array, size, 1);
 }
